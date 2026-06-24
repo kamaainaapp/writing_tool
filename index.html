@@ -134,9 +134,11 @@
     font-size:13px;font-weight:500;color:var(--ink-soft);
     font-variant-numeric:tabular-nums;letter-spacing:.01em;
   }
-  .readout .range{color:var(--ink);font-weight:600;}
+  .readout .num{color:var(--ink);font-weight:600;}
+  .readout .range{color:var(--ink-soft);font-weight:500;}
   .readout .unit{color:var(--ink-faint);font-weight:500;}
   .readout .over-tag{color:var(--over);font-weight:600;}
+  .meter.is-over .readout .num{color:var(--over);}
   .meter.is-over .readout .range{color:var(--over);}
   .meter.is-over .readout .unit{color:var(--over);}
   .pct{font-size:12px;color:var(--ink-faint);font-variant-numeric:tabular-nums;}
@@ -261,7 +263,7 @@
           <textarea class="ta-prefix" id="prefix" spellcheck="true"></textarea>
           <div class="meter" id="meter-prefix">
             <div class="meter-row">
-              <span class="readout" id="readout-prefix"><span class="range">10–200</span> <span class="unit">words</span></span>
+              <span class="readout" id="readout-prefix"><span class="num">0</span> <span class="range">· 10–200</span> <span class="unit">words</span></span>
               <span class="pct" id="pct-prefix">0%</span>
             </div>
             <div class="track"><div class="fill" id="fill-prefix"></div></div>
@@ -283,7 +285,7 @@
           <textarea class="ta-suffix" id="suffix" spellcheck="true"></textarea>
           <div class="meter" id="meter-suffix">
             <div class="meter-row">
-              <span class="readout" id="readout-suffix"><span class="range">100–600</span> <span class="unit">words</span></span>
+              <span class="readout" id="readout-suffix"><span class="num">0</span> <span class="range">· 100–600</span> <span class="unit">words</span></span>
               <span class="pct" id="pct-suffix">0%</span>
             </div>
             <div class="track"><div class="fill" id="fill-suffix"></div></div>
@@ -356,7 +358,7 @@
       meter.classList.toggle('is-near', near);
       card.classList.toggle('over', over);
 
-      var html = '<span class="range">' + min + '–' + max + '</span> <span class="unit">words</span>';
+      var html = '<span class="num">' + n + '</span> <span class="range">· ' + min + '–' + max + '</span> <span class="unit">words</span>';
       if (over) html += ' <span class="over-tag">· ' + (n - max) + ' over</span>';
       readout.innerHTML = html;
 
