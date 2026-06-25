@@ -3,545 +3,463 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Writing workspace</title>
+<title>Rewrite workspace</title>
 <style>
   :root{
-    /* light */
-    --paper:#f3f5f6;
-    --surface:#ffffff;
-    --ink:#1b2630;
-    --ink-soft:#576069;
-    --ink-faint:#8a939c;
-    --line:#e4e7ea;
-    --field:#fbfcfc;
-    --track-bg:#e9ecee;
-    --accent:#2c6e69;      /* under target */
-    --warn:#bd8730;        /* nearing target */
-    --over:#cf3a31;        /* past target */
-    --over-ring:rgba(207,58,49,.45);
+    --paper:#f3f5f6; --surface:#ffffff;
+    --ink:#1b2630; --ink-soft:#576069; --ink-faint:#8a939c;
+    --line:#e4e7ea; --field:#fbfcfc; --track-bg:#e9ecee;
+    --accent:#2c6e69; --warn:#bd8730; --over:#cf3a31; --over-ring:rgba(207,58,49,.45);
     --shadow:0 1px 2px rgba(20,30,40,.04), 0 8px 24px rgba(20,30,40,.05);
-
     --serif:"Iowan Old Style","Charter","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   }
   [data-theme="dark"]{
-    --paper:#14171b;
-    --surface:#1b1f24;
-    --ink:#e7eaed;
-    --ink-soft:#aab2bb;
-    --ink-faint:#79828c;
-    --line:#2a3036;
-    --field:#181c20;
-    --track-bg:#262c32;
-    --accent:#5fb3aa;
-    --warn:#d8a648;
-    --over:#e7716a;
-    --over-ring:rgba(231,113,106,.5);
+    --paper:#14171b; --surface:#1b1f24;
+    --ink:#e7eaed; --ink-soft:#aab2bb; --ink-faint:#79828c;
+    --line:#2a3036; --field:#181c20; --track-bg:#262c32;
+    --accent:#5fb3aa; --warn:#d8a648; --over:#e7716a; --over-ring:rgba(231,113,106,.5);
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
   }
 
   *{box-sizing:border-box;}
-  html,body{margin:0;}
+  html,body{height:100%;margin:0;}
   body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:var(--sans);
-    -webkit-font-smoothing:antialiased;
-    line-height:1.5;
-    min-height:100vh;
+    background:var(--paper); color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    height:100vh; overflow:hidden; display:flex; flex-direction:column;
   }
 
-  .shell{max-width:1040px;margin:0 auto;padding:26px 22px 64px;}
+  .shell{flex:1; min-height:0; width:100%; max-width:1500px; margin:0 auto; padding:15px 18px 18px; display:flex; flex-direction:column;}
 
   /* ---- top bar ---- */
-  .topbar{
-    display:flex;align-items:center;justify-content:flex-end;
-    gap:16px;margin-bottom:16px;
+  .topbar{flex:none; display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:13px;}
+  .drawer-toggle{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:600; color:var(--ink-soft);
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:8px 12px; cursor:pointer;
+    transition:color .15s ease, border-color .15s ease;
   }
+  .drawer-toggle:hover{color:var(--ink); border-color:var(--ink-faint);}
+  .drawer-toggle svg{width:16px; height:16px;}
+  .drawer-toggle .badge{
+    min-width:18px; height:18px; padding:0 5px; border-radius:9px;
+    background:var(--accent); color:#fff; font-size:11px; font-weight:700;
+    display:inline-grid; place-items:center;
+  }
+  [data-theme="dark"] .drawer-toggle .badge{color:#10221f;}
+  .drawer-toggle .badge[data-zero="true"]{display:none;}
   .theme-toggle{
-    flex:none;display:inline-grid;place-items:center;
-    width:38px;height:38px;border-radius:10px;
-    border:1px solid var(--line);background:var(--surface);
-    color:var(--ink-soft);cursor:pointer;
+    flex:none; display:inline-grid; place-items:center; width:38px; height:38px;
+    border-radius:10px; border:1px solid var(--line); background:var(--surface);
+    color:var(--ink-soft); cursor:pointer;
     transition:border-color .15s ease, color .15s ease, transform .1s ease;
   }
-  .theme-toggle:hover{color:var(--ink);border-color:var(--ink-faint);}
+  .theme-toggle:hover{color:var(--ink); border-color:var(--ink-faint);}
   .theme-toggle:active{transform:scale(.94);}
-  .theme-toggle svg{width:18px;height:18px;}
-  .icon-moon{display:block;}
-  .icon-sun{display:none;}
-  [data-theme="dark"] .icon-moon{display:none;}
-  [data-theme="dark"] .icon-sun{display:block;}
+  .theme-toggle svg{width:18px; height:18px;}
+  .icon-moon{display:block;} .icon-sun{display:none;}
+  [data-theme="dark"] .icon-moon{display:none;} [data-theme="dark"] .icon-sun{display:block;}
 
-  /* ---- layout ---- */
-  .workspace{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) 340px;
-    gap:22px;
-    align-items:start;
-  }
-  .stack{display:flex;flex-direction:column;gap:22px;min-width:0;}
+  /* ---- split ---- */
+  .split{flex:1; min-height:0; display:grid; grid-template-columns:1fr 14px 1fr;}
 
-  /* ---- card ---- */
-  .card{
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:14px;
-    box-shadow:var(--shadow);
-    padding:18px 18px 16px;
+  .pane{
+    min-width:0; min-height:0; display:flex; flex-direction:column;
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); overflow:hidden;
     transition:box-shadow .2s ease;
-    animation:rise .5s cubic-bezier(.2,.7,.3,1) both;
   }
-  .card.over{box-shadow:0 0 0 1px var(--over-ring) inset, var(--shadow);}
-  .card.sources{animation-delay:.08s;}
-  .stack .card:nth-child(2){animation-delay:.04s;}
+  .pane.over{box-shadow:0 0 0 1px var(--over-ring) inset, var(--shadow);}
 
-  .card-head{
-    display:flex;align-items:flex-start;justify-content:space-between;
-    gap:12px;margin-bottom:12px;
-  }
-  .labels{display:flex;flex-direction:column;gap:2px;min-width:0;}
-  .label{
-    font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--ink-soft);
-  }
-  .sub{font-size:12px;color:var(--ink-faint);}
+  .pane-head{flex:none; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 15px 9px;}
+  .label{font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft);}
 
-  /* ---- fields ---- */
-  textarea{
-    width:100%;display:block;
-    font-family:var(--serif);
-    font-size:16.5px;line-height:1.62;color:var(--ink);
-    background:var(--field);
-    border:1px solid var(--line);border-radius:10px;
-    padding:13px 14px;resize:none;overflow:hidden;outline:none;
-    field-sizing:content;
-    transition:border-color .15s ease, background .15s ease;
+  .pane textarea{
+    flex:1; min-height:0; width:100%; resize:none; border:0; outline:0; background:transparent;
+    padding:2px 15px 10px; overflow:auto;
+    font-family:var(--serif); font-size:16.5px; line-height:1.62; color:var(--ink);
   }
-  textarea::placeholder{color:var(--ink-faint);}
-  textarea:focus{border-color:var(--accent);background:var(--surface);}
-  .ta-prefix{min-height:150px;}
-  .ta-suffix{min-height:300px;}
-  .ta-sources{min-height:140px;font-family:var(--sans);font-size:14px;line-height:1.55;}
+  .pane textarea::placeholder{color:var(--ink-faint);}
 
-  /* ---- meter (signature element) ---- */
-  .meter{margin-top:13px;}
-  .meter-row{
-    display:flex;align-items:baseline;justify-content:space-between;
-    gap:10px;margin-bottom:8px;
-  }
-  .readout{
-    font-size:13px;font-weight:500;color:var(--ink-soft);
-    font-variant-numeric:tabular-nums;letter-spacing:.01em;
-  }
-  .readout .num{color:var(--ink);font-weight:600;}
-  .readout .range{color:var(--ink-soft);font-weight:500;}
-  .readout .unit{color:var(--ink-faint);font-weight:500;}
-  .readout .over-tag{color:var(--over);font-weight:600;}
-  .meter.is-over .readout .num{color:var(--over);}
-  .meter.is-over .readout .range{color:var(--over);}
+  .pane-foot{flex:none; padding:10px 15px 13px; border-top:1px solid var(--line);}
+
+  /* ---- meter / readout ---- */
+  .meter-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px;}
+  .readout{font-size:13px; font-weight:500; color:var(--ink-soft); font-variant-numeric:tabular-nums; letter-spacing:.01em;}
+  .readout .num{color:var(--ink); font-weight:600;}
+  .readout .range{color:var(--ink-soft); font-weight:500;}
+  .readout .unit{color:var(--ink-faint); font-weight:500;}
+  .readout .over-tag{color:var(--over); font-weight:600;}
+  .meter.is-over .readout .num,
+  .meter.is-over .readout .range,
   .meter.is-over .readout .unit{color:var(--over);}
-  .pct{font-size:12px;color:var(--ink-faint);font-variant-numeric:tabular-nums;}
+  .pct{font-size:12px; color:var(--ink-faint); font-variant-numeric:tabular-nums;}
   .meter.is-over .pct{color:var(--over);}
-
-  .track{
-    height:6px;border-radius:999px;background:var(--track-bg);
-    overflow:hidden;
-  }
-  .fill{
-    height:100%;width:0;border-radius:999px;background:var(--accent);
-    transition:width .35s cubic-bezier(.3,.7,.3,1), background-color .25s ease;
-  }
+  .track{height:6px; border-radius:999px; background:var(--track-bg); overflow:hidden;}
+  .fill{height:100%; width:0; border-radius:999px; background:var(--accent); transition:width .35s cubic-bezier(.3,.7,.3,1), background-color .25s ease;}
   .meter.is-near .fill{background:var(--warn);}
   .meter.is-over .fill{background:var(--over);}
 
+  /* ---- gutter + swap ---- */
+  .gutter{position:relative; display:flex; align-items:center; justify-content:center; cursor:col-resize; touch-action:none;}
+  .gutter::before{content:''; width:2px; height:100%; border-radius:2px; background:var(--line); transition:background .15s ease;}
+  .gutter:hover::before{background:var(--ink-faint);}
+  .swap{
+    position:relative; z-index:2; flex:none; width:32px; height:32px; border-radius:50%;
+    display:grid; place-items:center; cursor:pointer;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); box-shadow:var(--shadow);
+    transition:color .15s ease, border-color .15s ease, transform .3s ease;
+  }
+  .swap:hover{color:var(--ink); border-color:var(--ink-faint);}
+  .swap:active{transform:rotate(180deg);}
+  .swap svg{width:16px; height:16px;}
+
   /* ---- copy button ---- */
-  .copy{
-    flex:none;display:inline-flex;align-items:center;gap:6px;
-    font-family:var(--sans);font-size:12.5px;font-weight:600;
-    color:var(--ink-soft);background:var(--surface);
-    border:1px solid var(--line);border-radius:8px;
-    padding:6px 11px;cursor:pointer;
-    transition:border-color .15s ease, color .15s ease, background .15s ease, transform .1s ease;
-  }
-  .copy:hover{color:var(--ink);border-color:var(--ink-faint);}
+  .copy{flex:none; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600;
+    color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:6px 11px; cursor:pointer; transition:border-color .15s ease, color .15s ease, transform .1s ease;}
+  .copy:hover{color:var(--ink); border-color:var(--ink-faint);}
   .copy:active{transform:scale(.96);}
-  .copy svg{width:14px;height:14px;}
+  .copy svg{width:14px; height:14px;}
   .copy .ico-check{display:none;}
-  .copy.done{color:var(--accent);border-color:var(--accent);}
-  .copy.done .ico-copy{display:none;}
-  .copy.done .ico-check{display:inline;}
+  .copy.done{color:var(--accent); border-color:var(--accent);}
+  .copy.done .ico-copy{display:none;} .copy.done .ico-check{display:inline;}
 
-  /* ---- sources column ---- */
-  .sources{position:sticky;top:20px;}
-
-  /* ---- cross meter: suffix vs prefix ---- */
-  .cross{margin-top:13px;}
-  .cross .readout{color:var(--ink-soft);}
-  .cross.done .readout{color:var(--accent);font-weight:600;}
-  .cross .fill{background:var(--ink-faint);}
-  .cross.done .fill{background:var(--accent);}
-
-  /* ---- sources / links ---- */
-  .links{margin-top:14px;}
-  .links-head{
-    font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--ink-faint);margin-bottom:8px;display:flex;justify-content:space-between;
+  /* ---- drawer ---- */
+  .backdrop{position:fixed; inset:0; background:rgba(10,15,20,.30); opacity:0; pointer-events:none; transition:opacity .28s ease; z-index:40;}
+  .backdrop.open{opacity:1; pointer-events:auto;}
+  .drawer{
+    position:fixed; top:0; right:0; height:100vh; width:min(370px,92vw); z-index:50;
+    background:var(--surface); border-left:1px solid var(--line); box-shadow:-10px 0 34px rgba(10,15,20,.18);
+    transform:translateX(101%); transition:transform .3s cubic-bezier(.4,0,.2,1);
+    display:flex; flex-direction:column; padding:18px;
   }
-  .links-count{font-weight:600;color:var(--ink-soft);}
-  .link-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
-  .link-item{
-    display:flex;align-items:center;gap:8px;
-    padding:7px 9px;border:1px solid var(--line);border-radius:8px;
-    background:var(--field);
-  }
-  .link-item a{
-    flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    font-size:13px;color:var(--accent);text-decoration:none;
-  }
+  .drawer.open{transform:none;}
+  .drawer-head{flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px;}
+  .drawer-title{font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft);}
+  .drawer-tools{display:flex; align-items:center; gap:8px;}
+  .icon-btn{flex:none; display:inline-grid; place-items:center; width:30px; height:30px; border-radius:8px;
+    border:1px solid var(--line); background:transparent; color:var(--ink-faint); cursor:pointer;
+    transition:color .15s ease, border-color .15s ease;}
+  .icon-btn:hover{color:var(--ink); border-color:var(--ink-faint);}
+  .icon-btn svg{width:16px; height:16px;}
+  .sources-ta{flex:none; height:110px; width:100%; resize:none; overflow:auto;
+    background:var(--field); border:1px solid var(--line); border-radius:10px; padding:11px 12px; outline:none;
+    font-family:var(--sans); font-size:14px; line-height:1.55; color:var(--ink);
+    transition:border-color .15s ease, background .15s ease;}
+  .sources-ta::placeholder{color:var(--ink-faint);}
+  .sources-ta:focus{border-color:var(--accent); background:var(--surface);}
+  .links{flex:1; min-height:0; display:flex; flex-direction:column; margin-top:15px;}
+  .links-head{flex:none; font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:8px; display:flex; justify-content:space-between;}
+  .links-count{font-weight:600; color:var(--ink-soft);}
+  .link-list{flex:1; min-height:0; overflow:auto; list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px;}
+  .link-item{display:flex; align-items:center; gap:8px; padding:7px 9px; border:1px solid var(--line); border-radius:8px; background:var(--field);}
+  .link-item a{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; color:var(--accent); text-decoration:none;}
   .link-item a:hover{text-decoration:underline;}
-  .link-copy{
-    flex:none;display:inline-grid;place-items:center;
-    width:26px;height:26px;border-radius:6px;border:1px solid transparent;
-    background:transparent;color:var(--ink-faint);cursor:pointer;
-    transition:color .15s ease, background .15s ease;
-  }
-  .link-copy:hover{color:var(--ink);background:var(--track-bg);}
-  .link-copy svg{width:13px;height:13px;}
+  .link-copy{flex:none; display:inline-grid; place-items:center; width:26px; height:26px; border-radius:6px; border:1px solid transparent; background:transparent; color:var(--ink-faint); cursor:pointer; transition:color .15s ease, background .15s ease;}
+  .link-copy:hover{color:var(--ink); background:var(--track-bg);}
+  .link-copy svg{width:13px; height:13px;}
   .link-copy.done{color:var(--accent);}
-  .links-empty{font-size:13px;color:var(--ink-faint);font-style:italic;}
+  .links-empty{flex:none; font-size:13px; color:var(--ink-faint); font-style:italic;}
+  .drawer-note{flex:none; font-size:11.5px; color:var(--ink-faint); margin:14px 0 0; line-height:1.5;}
 
-  /* ---- footer note ---- */
-  .foot-note{
-    margin-top:28px;text-align:center;
-    font-size:12px;color:var(--ink-faint);
-  }
-
-  @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-
-  @media (max-width:860px){
-    .workspace{grid-template-columns:1fr;}
-    .sources{position:static;}
-  }
-  @media (max-width:480px){
-    .shell{padding:20px 14px 48px;}
+  /* ---- mobile ---- */
+  @media (max-width:760px){
+    body{height:auto; min-height:100vh; overflow:auto;}
+    .shell{flex:none; height:auto;}
+    .split{display:flex; flex-direction:column; gap:12px;}
+    .pane{min-height:48vh;}
+    .gutter{cursor:default; padding:2px 0;}
+    .gutter::before{display:none;}
   }
 
   @media (prefers-reduced-motion:reduce){
     *{animation:none !important;}
-    .fill{transition:none;}
+    .fill,.drawer,.backdrop{transition:none;}
   }
-  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px;}
 </style>
 </head>
 <body>
   <div class="shell">
 
     <div class="topbar">
+      <button class="drawer-toggle" id="drawerToggle" aria-label="Open links and sources">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span>Sources</span>
+        <span class="badge" id="drawerCount" data-zero="true">0</span>
+      </button>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
     </div>
 
-    <div class="workspace">
+    <div class="split" id="split">
 
-      <div class="stack">
-
-        <!-- PREFIX -->
-        <section class="card" id="card-prefix">
-          <div class="card-head">
-            <div class="labels">
-              <span class="label">Prefix</span>
-            </div>
-            <button class="copy" data-copy="prefix" aria-label="Copy prefix">
-              <svg class="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-              <svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              <span class="copy-label">Copy</span>
-            </button>
-          </div>
-          <textarea class="ta-prefix" id="prefix" spellcheck="true"></textarea>
-          <div class="meter" id="meter-prefix">
-            <div class="meter-row">
-              <span class="readout" id="readout-prefix"><span class="num">0</span> <span class="range">· 10–200</span> <span class="unit">words</span></span>
-              <span class="pct" id="pct-prefix">0%</span>
-            </div>
-            <div class="track"><div class="fill" id="fill-prefix"></div></div>
-          </div>
-        </section>
-
-        <!-- SUFFIX -->
-        <section class="card" id="card-suffix">
-          <div class="card-head">
-            <div class="labels">
-              <span class="label">Suffix</span>
-            </div>
-            <button class="copy" data-copy="suffix" aria-label="Copy suffix">
-              <svg class="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-              <svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              <span class="copy-label">Copy</span>
-            </button>
-          </div>
-          <textarea class="ta-suffix" id="suffix" spellcheck="true"></textarea>
-          <div class="meter" id="meter-suffix">
-            <div class="meter-row">
-              <span class="readout" id="readout-suffix"><span class="num">0</span> <span class="range">· 100–600</span> <span class="unit">words</span></span>
-              <span class="pct" id="pct-suffix">0%</span>
-            </div>
-            <div class="track"><div class="fill" id="fill-suffix"></div></div>
-          </div>
-          <div class="cross" id="cross">
-            <div class="meter-row">
-              <span class="readout" id="cross-readout">Longer than prefix</span>
-            </div>
-            <div class="track"><div class="fill" id="cross-fill"></div></div>
-          </div>
-        </section>
-
-      </div>
-
-      <!-- SOURCES -->
-      <section class="card sources">
-        <div class="card-head">
-          <div class="labels">
-            <span class="label">Links &amp; sources</span>
-            <span class="sub">Paste anything</span>
-          </div>
-          <button class="copy" data-copy="sources" aria-label="Copy sources">
+      <!-- ORIGINAL -->
+      <section class="pane" id="pane-original">
+        <div class="pane-head">
+          <span class="label">Original</span>
+          <button class="copy" data-copy="original" aria-label="Copy original">
             <svg class="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
             <svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             <span class="copy-label">Copy</span>
           </button>
         </div>
-        <textarea class="ta-sources" id="sources" placeholder="Paste links and sources here. URLs below become clickable." spellcheck="false"></textarea>
-        <div class="links">
-          <div class="links-head"><span>Links</span><span class="links-count" id="links-count">0</span></div>
-          <ul class="link-list" id="link-list"></ul>
-          <p class="links-empty" id="links-empty">Links you paste appear here.</p>
+        <textarea id="original" placeholder="Paste the original text to rewrite from." spellcheck="false"></textarea>
+        <div class="pane-foot">
+          <span class="readout"><span class="num" id="count-original">0</span> <span class="unit">words</span></span>
+        </div>
+      </section>
+
+      <!-- GUTTER -->
+      <div class="gutter" id="gutter">
+        <button class="swap" id="swap" aria-label="Swap sides" title="Swap sides">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
+        </button>
+      </div>
+
+      <!-- REWRITE -->
+      <section class="pane" id="pane-rewrite">
+        <div class="pane-head">
+          <span class="label">Rewrite</span>
+          <button class="copy" data-copy="rewrite" aria-label="Copy rewrite">
+            <svg class="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            <svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="copy-label">Copy</span>
+          </button>
+        </div>
+        <textarea id="rewrite" spellcheck="true"></textarea>
+        <div class="pane-foot">
+          <div class="meter" id="meter-rewrite">
+            <div class="meter-row">
+              <span class="readout" id="readout-rewrite"><span class="num">0</span> <span class="range">· 100–1000</span> <span class="unit">words</span></span>
+              <span class="pct" id="pct-rewrite">0%</span>
+            </div>
+            <div class="track"><div class="fill" id="fill-rewrite"></div></div>
+          </div>
         </div>
       </section>
 
     </div>
-
-    <p class="foot-note">Word counts turn red past the max. Nothing is saved — copy your text before closing the tab.</p>
-
   </div>
+
+  <!-- DRAWER -->
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="drawer" id="drawer" aria-label="Links and sources">
+    <div class="drawer-head">
+      <span class="drawer-title">Links &amp; sources</span>
+      <div class="drawer-tools">
+        <button class="copy" data-copy="sources" aria-label="Copy sources">
+          <svg class="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <span class="copy-label">Copy</span>
+        </button>
+        <button class="icon-btn" id="drawerClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <textarea class="sources-ta" id="sources" placeholder="Paste links and sources. URLs below become clickable." spellcheck="false"></textarea>
+    <div class="links">
+      <div class="links-head"><span>Links</span><span class="links-count" id="links-count">0</span></div>
+      <ul class="link-list" id="link-list"></ul>
+      <p class="links-empty" id="links-empty">Links you paste appear here.</p>
+    </div>
+    <p class="drawer-note">Text isn't saved — copy it before closing the tab. Your layout (sides, divider, theme) is remembered.</p>
+  </aside>
 
 <script>
 (function(){
   "use strict";
 
-  /* ---------- word counting + meters ---------- */
-  function countWords(text){
-    var t = text.trim();
-    return t ? t.split(/\s+/).length : 0;
-  }
+  function countWords(t){ t = t.trim(); return t ? t.split(/\s+/).length : 0; }
 
-  function makeMeter(areaId, min, max){
-    var area = document.getElementById(areaId);
-    var card = document.getElementById('card-' + areaId);
-    var meter = document.getElementById('meter-' + areaId);
-    var readout = document.getElementById('readout-' + areaId);
-    var pctEl = document.getElementById('pct-' + areaId);
-    var fill = document.getElementById('fill-' + areaId);
-
-    function update(){
-      var n = countWords(area.value);
-      var ratio = n / max;
-      var pct = Math.min(ratio, 1) * 100;
-
-      fill.style.width = pct.toFixed(1) + '%';
-
-      var over = n > max;
-      var near = !over && n >= max * 0.85;
-      meter.classList.toggle('is-over', over);
-      meter.classList.toggle('is-near', near);
-      card.classList.toggle('over', over);
-
-      var html = '<span class="num">' + n + '</span> <span class="range">· ' + min + '–' + max + '</span> <span class="unit">words</span>';
-      if (over) html += ' <span class="over-tag">· ' + (n - max) + ' over</span>';
-      readout.innerHTML = html;
-
-      pctEl.textContent = Math.round(ratio * 100) + '%';
-    }
-
-    area.addEventListener('input', update);
-    update();
-  }
-
-  makeMeter('prefix', 10, 200);
-  makeMeter('suffix', 100, 600);
-
-  /* ---------- suffix-vs-prefix bar ---------- */
-  (function(){
-    var prefix  = document.getElementById('prefix');
-    var suffix  = document.getElementById('suffix');
-    var cross   = document.getElementById('cross');
-    var fill    = document.getElementById('cross-fill');
-    var readout = document.getElementById('cross-readout');
-
-    function update(){
-      var pw = countWords(prefix.value);
-      var sw = countWords(suffix.value);
-      var ratio = pw > 0 ? Math.min(sw / pw, 1) : (sw > 0 ? 1 : 0);
-      fill.style.width = (ratio * 100).toFixed(1) + '%';
-
-      var longer = sw > pw;
-      cross.classList.toggle('done', longer);
-
-      if (longer)         readout.textContent = 'Longer than prefix · +' + (sw - pw);
-      else if (sw === pw) readout.textContent = (sw === 0) ? 'Longer than prefix' : 'Same length as prefix';
-      else                readout.textContent = (pw - sw) + (pw - sw === 1 ? ' word' : ' words') + ' shorter than prefix';
-    }
-
-    prefix.addEventListener('input', update);
-    suffix.addEventListener('input', update);
-    update();
-  })();
-
-  /* ---------- copy to clipboard (with fallback) ---------- */
+  /* ---------- clipboard ---------- */
   function fallbackCopy(text){
     var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.top = '-1000px';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
+    ta.value = text; ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
     try { document.execCommand('copy'); } finally { document.body.removeChild(ta); }
   }
-
   function copyText(text){
     if (navigator.clipboard && window.isSecureContext){
       return navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
     }
-    fallbackCopy(text);
-    return Promise.resolve();
+    fallbackCopy(text); return Promise.resolve();
   }
-
   function flash(btn){
     var label = btn.querySelector('.copy-label');
     btn.classList.add('done');
-    if (label){
-      if (!btn._old) btn._old = label.textContent;
-      label.textContent = 'Copied';
-    }
-    clearTimeout(btn._timer);
-    btn._timer = setTimeout(function(){
-      btn.classList.remove('done');
-      if (label && btn._old) label.textContent = btn._old;
-    }, 1600);
+    if (label){ if (!btn._old) btn._old = label.textContent; label.textContent = 'Copied'; }
+    clearTimeout(btn._t);
+    btn._t = setTimeout(function(){ btn.classList.remove('done'); if (label && btn._old) label.textContent = btn._old; }, 1600);
   }
-
   document.querySelectorAll('.copy').forEach(function(btn){
     btn.addEventListener('click', function(){
-      var id = btn.getAttribute('data-copy');
-      var src = document.getElementById(id);
-      if (!src) return;
-      copyText(src.value).then(function(){ flash(btn); });
+      var src = document.getElementById(btn.getAttribute('data-copy'));
+      if (src) copyText(src.value).then(function(){ flash(btn); });
     });
   });
 
-  /* ---------- source links ---------- */
-  var sources = document.getElementById('sources');
-  var linkList = document.getElementById('link-list');
-  var linksCount = document.getElementById('links-count');
-  var linksEmpty = document.getElementById('links-empty');
-  var URL_RE = /(?:https?:\/\/|www\.)[^\s<>"')]+/gi;
+  /* ---------- rewrite meter (100–1000) ---------- */
+  (function(){
+    var area = document.getElementById('rewrite');
+    var pane = document.getElementById('pane-rewrite');
+    var meter = document.getElementById('meter-rewrite');
+    var readout = document.getElementById('readout-rewrite');
+    var pctEl = document.getElementById('pct-rewrite');
+    var fill = document.getElementById('fill-rewrite');
+    var MIN = 100, MAX = 1000;
+    function update(){
+      var n = countWords(area.value);
+      var ratio = n / MAX;
+      fill.style.width = (Math.min(ratio, 1) * 100).toFixed(1) + '%';
+      var over = n > MAX, near = !over && n >= MAX * 0.85;
+      meter.classList.toggle('is-over', over);
+      meter.classList.toggle('is-near', near);
+      pane.classList.toggle('over', over);
+      var html = '<span class="num">' + n + '</span> <span class="range">· ' + MIN + '–' + MAX + '</span> <span class="unit">words</span>';
+      if (over) html += ' <span class="over-tag">· ' + (n - MAX) + ' over</span>';
+      readout.innerHTML = html;
+      pctEl.textContent = Math.round(ratio * 100) + '%';
+    }
+    area.addEventListener('input', update); update();
+  })();
 
-  function parseLinks(text){
-    var found = text.match(URL_RE) || [];
-    var seen = {}, out = [];
-    found.forEach(function(raw){
-      var u = raw.replace(/[.,;:!?)\]\}>]+$/, '');
-      var href = /^www\./i.test(u) ? 'https://' + u : u;
-      if (!seen[href]){ seen[href] = true; out.push({ href: href, label: u }); }
-    });
-    return out;
-  }
+  /* ---------- original word count ---------- */
+  (function(){
+    var area = document.getElementById('original');
+    var el = document.getElementById('count-original');
+    function update(){ el.textContent = countWords(area.value); }
+    area.addEventListener('input', update); update();
+  })();
 
-  function copyIcons(){
-    return '<svg class="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
-           '<svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-  }
+  /* ---------- links (drawer) ---------- */
+  (function(){
+    var sources = document.getElementById('sources');
+    var linkList = document.getElementById('link-list');
+    var linksCount = document.getElementById('links-count');
+    var linksEmpty = document.getElementById('links-empty');
+    var drawerCount = document.getElementById('drawerCount');
+    var RE = /(?:https?:\/\/|www\.)[^\s<>"')]+/gi;
 
-  function renderLinks(){
-    var links = parseLinks(sources.value);
-    linkList.innerHTML = '';
-    linksCount.textContent = links.length;
-    linksEmpty.style.display = links.length ? 'none' : 'block';
-
-    links.forEach(function(link){
-      var li = document.createElement('li');
-      li.className = 'link-item';
-
-      var a = document.createElement('a');
-      a.href = link.href;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = link.label;
-      a.title = link.href;
-
-      var btn = document.createElement('button');
-      btn.className = 'link-copy';
-      btn.setAttribute('aria-label', 'Copy link');
-      btn.innerHTML = copyIcons();
-      btn.addEventListener('click', function(){
-        copyText(link.href).then(function(){
-          btn.classList.add('done');
-          clearTimeout(btn._t);
-          btn._t = setTimeout(function(){ btn.classList.remove('done'); }, 1400);
-        });
+    function parse(text){
+      var found = text.match(RE) || [], seen = {}, out = [];
+      found.forEach(function(raw){
+        var u = raw.replace(/[.,;:!?)\]\}>]+$/, '');
+        var href = /^www\./i.test(u) ? 'https://' + u : u;
+        if (!seen[href]){ seen[href] = true; out.push({ href: href, label: u }); }
       });
+      return out;
+    }
+    function copyIcons(){
+      return '<svg class="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    }
+    function render(){
+      var links = parse(sources.value);
+      linkList.innerHTML = '';
+      linksCount.textContent = links.length;
+      drawerCount.textContent = links.length;
+      drawerCount.setAttribute('data-zero', links.length === 0 ? 'true' : 'false');
+      linksEmpty.style.display = links.length ? 'none' : 'block';
+      links.forEach(function(link){
+        var li = document.createElement('li'); li.className = 'link-item';
+        var a = document.createElement('a');
+        a.href = link.href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.textContent = link.label; a.title = link.href;
+        var btn = document.createElement('button');
+        btn.className = 'link-copy'; btn.setAttribute('aria-label', 'Copy link'); btn.innerHTML = copyIcons();
+        btn.addEventListener('click', function(){
+          copyText(link.href).then(function(){
+            btn.classList.add('done'); clearTimeout(btn._t);
+            btn._t = setTimeout(function(){ btn.classList.remove('done'); }, 1400);
+          });
+        });
+        li.appendChild(a); li.appendChild(btn); linkList.appendChild(li);
+      });
+    }
+    sources.addEventListener('input', render); render();
+  })();
 
-      li.appendChild(a);
-      li.appendChild(btn);
-      linkList.appendChild(li);
-    });
-  }
+  /* ---------- drawer open/close ---------- */
+  (function(){
+    var drawer = document.getElementById('drawer');
+    var backdrop = document.getElementById('backdrop');
+    var toggle = document.getElementById('drawerToggle');
+    var close = document.getElementById('drawerClose');
+    function set(open){ drawer.classList.toggle('open', open); backdrop.classList.toggle('open', open); }
+    toggle.addEventListener('click', function(){ set(!drawer.classList.contains('open')); });
+    backdrop.addEventListener('click', function(){ set(false); });
+    close.addEventListener('click', function(){ set(false); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') set(false); });
+  })();
 
-  sources.addEventListener('input', renderLinks);
-  renderLinks();
+  /* ---------- layout: resize + swap + persistence ---------- */
+  (function(){
+    var split = document.getElementById('split');
+    var gutter = document.getElementById('gutter');
+    var swapBtn = document.getElementById('swap');
+    var order = ['original', 'rewrite'];
+    var ratio = 0.5;
 
-  /* ---------- auto-grow textareas ---------- */
-  // Modern browsers size textareas to their content natively (no JS, no jolt).
-  // Only fall back to JS where that isn't supported — and even then, grow without
-  // collapsing the box first, and hold the page still when we must re-measure.
-  var nativeSizing = !!(window.CSS && CSS.supports && CSS.supports('field-sizing', 'content'));
-  if (!nativeSizing){
-    var autoGrow = function(el){
-      if (el.scrollHeight > el.clientHeight){
-        // needs more room: extend only — never reset, so the page can't jump
-        el.style.height = (el.scrollHeight + el.offsetHeight - el.clientHeight) + 'px';
-      } else {
-        // content fits (and may have shrunk): re-measure, keeping scroll anchored
-        var y = window.pageYOffset;
-        el.style.height = 'auto';
-        el.style.height = (el.scrollHeight + el.offsetHeight - el.clientHeight) + 'px';
-        if (window.pageYOffset !== y) window.scrollTo(0, y);
+    try {
+      var L = JSON.parse(localStorage.getItem('ww.layout') || 'null');
+      if (L){
+        if (Array.isArray(L.order) && L.order.length === 2 &&
+            L.order.indexOf('original') > -1 && L.order.indexOf('rewrite') > -1) order = L.order;
+        if (typeof L.ratio === 'number') ratio = Math.min(0.8, Math.max(0.2, L.ratio));
       }
-    };
-    document.querySelectorAll('textarea').forEach(function(el){
-      el.addEventListener('input', function(){ autoGrow(el); });
-      autoGrow(el);
+    } catch(e){}
+
+    function stacked(){ return window.matchMedia('(max-width:760px)').matches; }
+    function apply(){
+      document.getElementById('pane-' + order[0]).style.order = '1';
+      gutter.style.order = '2';
+      document.getElementById('pane-' + order[1]).style.order = '3';
+      split.style.gridTemplateColumns = stacked() ? '' : (ratio + 'fr 14px ' + (1 - ratio) + 'fr');
+    }
+    function save(){ try { localStorage.setItem('ww.layout', JSON.stringify({ order: order, ratio: ratio })); } catch(e){} }
+
+    swapBtn.addEventListener('click', function(e){ e.stopPropagation(); order.reverse(); ratio = 1 - ratio; apply(); save(); });
+
+    var dragging = false;
+    gutter.addEventListener('pointerdown', function(e){
+      if (e.target.closest('.swap') || stacked()) return;
+      dragging = true; gutter.setPointerCapture(e.pointerId);
+      document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
     });
-    window.addEventListener('resize', function(){
-      document.querySelectorAll('textarea').forEach(autoGrow);
+    gutter.addEventListener('pointermove', function(e){
+      if (!dragging) return;
+      var rect = split.getBoundingClientRect();
+      ratio = Math.min(0.8, Math.max(0.2, (e.clientX - rect.left) / rect.width));
+      apply();
     });
-  }
+    function end(){ if (dragging){ dragging = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; save(); } }
+    gutter.addEventListener('pointerup', end);
+    gutter.addEventListener('pointercancel', end);
+    window.addEventListener('resize', apply);
+    apply();
+  })();
 
   /* ---------- theme ---------- */
-  var root = document.documentElement;
-  var toggle = document.getElementById('themeToggle');
-  try {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
-      root.setAttribute('data-theme', 'dark');
-    }
-  } catch(e){}
-  toggle.addEventListener('click', function(){
-    root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-  });
+  (function(){
+    var root = document.documentElement;
+    var toggle = document.getElementById('themeToggle');
+    try {
+      var saved = localStorage.getItem('ww.theme');
+      if (saved) root.setAttribute('data-theme', saved);
+      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
+    } catch(e){}
+    toggle.addEventListener('click', function(){
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('ww.theme', next); } catch(e){}
+    });
+  })();
 
 })();
 </script>
